@@ -1,1 +1,39 @@
-f
+name: Deploy redis to AWS EKS
+
+on:
+  push:
+    branches:
+      - main  # Triggers deployment when code is pushed to the main branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws_session_token: ${{ secrets.aws_session_token }}
+          aws-region: us-east-1  # Change this if needed
+
+      - name: Install kubectl
+        run: |
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x kubectl
+          sudo mv kubectl /usr/local/bin/
+
+      - name: Update kubeconfig
+        run: aws eks update-kubeconfig --name ${{ secrets.EKS_CLUSTER_NAME }}  --region us-east-1
+
+      - name: Deploy to Kubernetes
+        run: |
+          kubectl apply -f eksredisdeploy/redis-deployment.yaml
+          kubectl apply -f eksredisdeploy/redis-service.yaml
+
+      - name: Verify Deployment
+        run: kubectl get pods,svc -n default
