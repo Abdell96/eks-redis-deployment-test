@@ -36,4 +36,6 @@ jobs:
           kubectl apply -f eksredisdeploy/redis-service.yaml
 
       - name: Verify Deployment
-        run: kubectl get pods,svc -n default
+        run: |
+          kubectl get pods -n testcluster
+          kubectl get svc -n testcluster
